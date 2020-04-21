@@ -1,24 +1,36 @@
 import json
+import os
+from base64 import b64decode
+
+import boto3
+import requests
 
 
-def hello(event, context):
-    body = {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "input": event
-    }
+def sns_message_to_slack(event, context):
+    message = event["Records"][0]["Sns"]["Message"]
+    subject = event["Records"][0]["Sns"]["Subject"]
 
-    response = {
-        "statusCode": 200,
-        "body": json.dumps(body)
-    }
+    if subject:
+        payload = {
+            "text": subject,
+            "blocks": [
+                {"type": "section", "text": {"text": message, "type": "mrkdwn"}}
+            ],
+        }
+    else:
+        payload = {"text": message}
+
+    webhook = (
+        boto3.client("kms")
+        .decrypt(CiphertextBlob=b64decode(os.environ["ENCRYPTED_SLACK_WEBHOOK"]))[
+            "Plaintext"
+        ]
+        .decode("utf-8")
+        .strip()
+    )
+
+    requests.post(webhook, json=payload)
+
+    response = {"statusCode": 200, "body": ""}
 
     return response
-
-    # Use this code if you don't use the http event with the LAMBDA-PROXY
-    # integration
-    """
-    return {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "event": event
-    }
-    """
