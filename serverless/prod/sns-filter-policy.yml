@@ -1,5 +1,0 @@
-stage:
-  - anything-but:
-      - dev
-      - develop
-      - development
